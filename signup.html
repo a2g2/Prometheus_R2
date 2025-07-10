@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
+    
+    <form id="signupForm" class="space-y-4" novalidate>
+        <div>
+            <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+            <input type="text" id="full_name" name="full_name" required minlength="2" maxlength="100"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="Enter your full name">
+            <div class="text-red-500 text-sm mt-1 hidden" id="full_name_error"></div>
+        </div>
+        
+        <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+            <input type="text" id="username" name="username" required pattern="[a-zA-Z0-9_]{3,20}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="3-20 characters, letters, numbers, underscores only">
+            <div class="text-red-500 text-sm mt-1 hidden" id="username_error"></div>
+        </div>
+        
+        <div>
+            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input type="email" id="email" name="email" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="Enter your email address">
+            <div class="text-red-500 text-sm mt-1 hidden" id="email_error"></div>
+        </div>
+        
+        <div>
+            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <input type="tel" id="phone" name="phone" pattern="[\+]?[0-9\s\-]{10,15}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="Optional: +1234567890">
+            <div class="text-red-500 text-sm mt-1 hidden" id="phone_error"></div>
+        </div>
+        
+        <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+            <input type="password" id="password" name="password" required minlength="8"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="At least 8 characters with letters and numbers">
+            <div class="text-red-500 text-sm mt-1 hidden" id="password_error"></div>
+            <div class="text-xs text-gray-500 mt-1">
+                Password must be at least 8 characters and contain both letters and numbers
+            </div>
+        </div>
+        
+        <button type="submit" id="signupBtn"
+                class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50">
+            <span id="signupBtnText">Create Account</span>
+            <span id="signupSpinner" class="hidden">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating account...
+            </span>
+        </button>
+    </form>
+    
+    <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600">
+            Already have an account? 
+            <a href="/login" class="text-blue-600 hover:text-blue-800 font-medium">Login</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const signupBtn = document.getElementById('signupBtn');
+    const signupBtnText = document.getElementById('signupBtnText');
+    const signupSpinner = document.getElementById('signupSpinner');
+    
+    // Clear previous errors
+    clearErrors();
+    
+    // Get form data
+    const fullName = document.getElementById('full_name').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    
+    // Frontend validation
+    let isValid = true;
+    
+    // Validate full name
+    if (!fullName || fullName.length < 2 || fullName.length > 100) {
+        showError('full_name', 'Full name must be between 2 and 100 characters');
+        isValid = false;
+    }
+    
+    // Validate username
+    const usernamePattern = /^[a-zA-Z0-9_]{3,20}$/;
+    if (!username || !usernamePattern.test(username)) {
+        showError('username', 'Username must be 3-20 characters and contain only letters, numbers, and underscores');
+        isValid = false;
+    }
+    
+    // Validate email
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!email || !emailPattern.test(email)) {
+        showError('email', 'Please enter a valid email address');
+        isValid = false;
+    }
+    
+    // Validate phone (optional)
+    if (phone) {
+        const phonePattern = /^[\+]?[0-9\s\-]{10,15}$/;
+        if (!phonePattern.test(phone)) {
+            showError('phone', 'Please enter a valid phone number');
+            isValid = false;
+        }
+    }
+    
+    // Validate password
+    if (password.length < 8) {
+        showError('password', 'Password must be at least 8 characters long');
+        isValid = false;
+    } else if (!/[A-Za-z]/.test(password)) {
+        showError('password', 'Password must contain at least one letter');
+        isValid = false;
+    } else if (!/\d/.test(password)) {
+        showError('password', 'Password must contain at least one number');
+        isValid = false;
+    }
+    
+    if (!isValid) return;
+    
+    // Show loading state
+    signupBtn.disabled = true;
+    signupBtnText.classList.add('hidden');
+    signupSpinner.classList.remove('hidden');
+    
+    try {
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                full_name: fullName,
+                username: username,
+                email: email,
+                phone: phone,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccessMessage(data.message + ' Redirecting to login...');
+            // Clear form
+            document.getElementById('signupForm').reset();
+            // Redirect to login after delay
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 2000);
+        } else {
+            showErrorMessage(data.message);
+        }
+    } catch (error) {
+        console.error('Signup error:', error);
+        showErrorMessage('Network error. Please try again.');
+    } finally {
+        // Reset button state
+        signupBtn.disabled = false;
+        signupBtnText.classList.remove('hidden');
+        signupSpinner.classList.add('hidden');
+    }
+});
+
+function clearErrors() {
+    document.querySelectorAll('.text-red-500').forEach(el => {
+        if (el.id.endsWith('_error')) {
+            el.classList.add('hidden');
+        }
+    });
+    document.querySelectorAll('input').forEach(el => el.classList.remove('border-red-500'));
+}
+
+function showError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + '_error');
+    field.classList.add('border-red-500');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function showErrorMessage(message) {
+    // Remove existing message
+    const existingMessage = document.querySelector('.api-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create error message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'api-message bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center';
+    messageDiv.innerHTML = `
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        ${message}
+    `;
+    
+    // Insert before the form
+    const form = document.getElementById('signupForm');
+    form.parentNode.insertBefore(messageDiv, form);
+}
+
+function showSuccessMessage(message) {
+    // Remove existing message
+    const existingMessage = document.querySelector('.api-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create success message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'api-message bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex items-center';
+    messageDiv.innerHTML = `
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        ${message}
+    `;
+    
+    // Insert before the form
+    const form = document.getElementById('signupForm');
+    form.parentNode.insertBefore(messageDiv, form);
+}
+</script>
+{% endblock %}

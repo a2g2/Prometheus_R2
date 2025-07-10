@@ -1,0 +1,201 @@
+{% extends "profile_base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">User Profile</h2>
+            <button id="logoutBtn" 
+               class="bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200">
+                <span id="logoutBtnText">Logout</span>
+                <span id="logoutSpinner" class="hidden">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Logging out...
+                </span>
+            </button>
+        </div>
+        
+        <!-- Loading state -->
+        <div id="profileLoading" class="text-center py-8">
+            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600">Loading profile...</p>
+        </div>
+        
+        <!-- Profile content -->
+        <div id="profileContent" class="hidden space-y-4">
+            <div class="border-b pb-4">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Account Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Full Name</label>
+                        <p class="text-lg text-gray-800" id="fullName">-</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Username</label>
+                        <p class="text-lg text-gray-800" id="username">-</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Email</label>
+                        <p class="text-lg text-gray-800" id="email">-</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600">Phone</label>
+                        <p class="text-lg text-gray-800" id="phone">-</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-4">
+                <div class="bg-green-50 border border-green-200 rounded-md p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-green-800" id="welcomeMessage">Welcome!</h3>
+                            <div class="mt-2 text-sm text-green-700">
+                                <p>You are successfully logged in to your account.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Error state -->
+        <div id="profileError" class="hidden text-center py-8">
+            <svg class="h-8 w-8 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <p class="text-red-600 mb-4" id="errorMessage">Failed to load profile</p>
+            <button onclick="loadProfile()" class="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                Try Again
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load profile data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadProfile();
+});
+
+async function loadProfile() {
+    const profileLoading = document.getElementById('profileLoading');
+    const profileContent = document.getElementById('profileContent');
+    const profileError = document.getElementById('profileError');
+    
+    // Show loading state
+    profileLoading.classList.remove('hidden');
+    profileContent.classList.add('hidden');
+    profileError.classList.add('hidden');
+    
+    try {
+        const response = await fetch('/api/user/profile', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.user) {
+            const user = data.data.user;
+            
+            // Populate profile data
+            document.getElementById('fullName').textContent = user.full_name || '-';
+            document.getElementById('username').textContent = user.username || '-';
+            document.getElementById('email').textContent = user.email || '-';
+            document.getElementById('phone').textContent = user.phone || 'Not provided';
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${user.full_name || user.username}!`;
+            
+            // Show profile content
+            profileLoading.classList.add('hidden');
+            profileContent.classList.remove('hidden');
+        } else {
+            throw new Error(data.message || 'Failed to load profile');
+        }
+    } catch (error) {
+        console.error('Profile loading error:', error);
+        
+        // Check if it's an authentication error
+        if (error.message.includes('Authentication') || error.message.includes('401')) {
+            // Redirect to login
+            window.location.href = '/login';
+            return;
+        }
+        
+        // Show error state
+        profileLoading.classList.add('hidden');
+        profileError.classList.remove('hidden');
+        document.getElementById('errorMessage').textContent = error.message || 'Failed to load profile';
+    }
+}
+
+// Logout functionality
+document.getElementById('logoutBtn').addEventListener('click', async function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    const logoutBtnText = document.getElementById('logoutBtnText');
+    const logoutSpinner = document.getElementById('logoutSpinner');
+    
+    // Show loading state
+    logoutBtn.disabled = true;
+    logoutBtnText.classList.add('hidden');
+    logoutSpinner.classList.remove('hidden');
+    
+    try {
+        const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Redirect to login page
+            window.location.href = '/login';
+        } else {
+            throw new Error(data.message || 'Logout failed');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Even if logout API fails, redirect to login for security
+        window.location.href = '/login';
+    } finally {
+        // Reset button state (though we'll likely redirect)
+        logoutBtn.disabled = false;
+        logoutBtnText.classList.remove('hidden');
+        logoutSpinner.classList.add('hidden');
+    }
+});
+
+// Check authentication status periodically
+setInterval(async function() {
+    try {
+        const response = await fetch('/api/auth/status');
+        const data = await response.json();
+        
+        if (!data.data || !data.data.authenticated) {
+            // User is no longer authenticated, redirect to login
+            window.location.href = '/login';
+        }
+    } catch (error) {
+        console.error('Auth status check failed:', error);
+    }
+}, 60000); // Check every minute
+</script>
+{% endblock %}

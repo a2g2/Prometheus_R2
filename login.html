@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+    
+    <form id="loginForm" class="space-y-4" novalidate>
+        <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+            <input type="text" id="username" name="username" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="Enter your username">
+            <div class="text-red-500 text-sm mt-1 hidden" id="username_error"></div>
+        </div>
+        
+        <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+            <input type="password" id="password" name="password" required
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   placeholder="Enter your password">
+            <div class="text-red-500 text-sm mt-1 hidden" id="password_error"></div>
+        </div>
+        
+        <button type="submit" id="loginBtn"
+                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50">
+            <span id="loginBtnText">Login</span>
+            <span id="loginSpinner" class="hidden">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Logging in...
+            </span>
+        </button>
+    </form>
+    
+    <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600">
+            Don't have an account? 
+            <a href="/signup" class="text-blue-600 hover:text-blue-800 font-medium">Sign up</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const loginBtn = document.getElementById('loginBtn');
+    const loginBtnText = document.getElementById('loginBtnText');
+    const loginSpinner = document.getElementById('loginSpinner');
+    
+    // Clear previous errors
+    clearErrors();
+    
+    // Get form data
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    
+    // Basic validation
+    let isValid = true;
+    if (!username) {
+        showError('username', 'Username is required');
+        isValid = false;
+    }
+    if (!password) {
+        showError('password', 'Password is required');
+        isValid = false;
+    }
+    
+    if (!isValid) return;
+    
+    // Show loading state
+    loginBtn.disabled = true;
+    loginBtnText.classList.add('hidden');
+    loginSpinner.classList.remove('hidden');
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showSuccessMessage(data.message);
+            // Redirect to profile after short delay
+            setTimeout(() => {
+                window.location.href = '/profile';
+            }, 1000);
+        } else {
+            showErrorMessage(data.message);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showErrorMessage('Network error. Please try again.');
+    } finally {
+        // Reset button state
+        loginBtn.disabled = false;
+        loginBtnText.classList.remove('hidden');
+        loginSpinner.classList.add('hidden');
+    }
+});
+
+function clearErrors() {
+    document.querySelectorAll('.text-red-500').forEach(el => {
+        if (el.id.endsWith('_error')) {
+            el.classList.add('hidden');
+        }
+    });
+    document.querySelectorAll('input').forEach(el => el.classList.remove('border-red-500'));
+}
+
+function showError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + '_error');
+    field.classList.add('border-red-500');
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function showErrorMessage(message) {
+    // Remove existing message
+    const existingMessage = document.querySelector('.api-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create error message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'api-message bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 flex items-center';
+    messageDiv.innerHTML = `
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+        </svg>
+        ${message}
+    `;
+    
+    // Insert before the form
+    const form = document.getElementById('loginForm');
+    form.parentNode.insertBefore(messageDiv, form);
+}
+
+function showSuccessMessage(message) {
+    // Remove existing message
+    const existingMessage = document.querySelector('.api-message');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+    
+    // Create success message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'api-message bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 flex items-center';
+    messageDiv.innerHTML = `
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        ${message}
+    `;
+    
+    // Insert before the form
+    const form = document.getElementById('loginForm');
+    form.parentNode.insertBefore(messageDiv, form);
+}
+</script>
+{% endblock %}
